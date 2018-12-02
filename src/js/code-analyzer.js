@@ -24,6 +24,10 @@ function parseBody(ast){
 }
 
 function parseExpressionStatement(ast, father){
+    Object.keys(values).forEach(function(key) {
+        let val = escodegen.generate(ast.declarations[decl].init).replace(key, values[key]);
+        values[ast.declarations[decl].id.name] = val;
+    });
     for(var row in father)
         if(jsonEqual(father[row], ast))
             father.splice(row, 1);
