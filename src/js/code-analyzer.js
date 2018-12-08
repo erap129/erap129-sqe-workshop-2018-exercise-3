@@ -1,15 +1,22 @@
 import * as esprima from 'esprima';
 import * as escodegen from 'escodegen';
 
-var values = {}
-var global_i = 0
+var values = {};
+var input_vector = [];
+var global_i = 0;
+
+function resetCodeParams(){
+    values = {};
+    input_vector = [];
+    global_i = [];
+}
 
 function jsonEqual(a,b) {
     return JSON.stringify(a) === JSON.stringify(b);
 }
 
 const parseCode = (codeToParse) => {
-    return esprima.parseScript(codeToParse);
+    return esprima.parseScript(codeToParse, {loc:true});
 };
 
 function parseBody(ast){
@@ -23,44 +30,77 @@ function parseBody(ast){
         substitute(ast.body, ast);
 }
 
-function parseExpressionStatement(ast, father){
-    Object.keys(values).forEach(function(key) {
-        let val = escodegen.generate(ast.declarations[decl].init).replace(key, values[key]);
-        values[ast.declarations[decl].id.name] = val;
-    });
-    for(var row in father)
-        if(jsonEqual(father[row], ast))
-            father.splice(row, 1);
-}
-
-function parseVariableDeclaration(ast, father){
-    for(let decl in ast.declarations){
-        Object.keys(values).forEach(function(key) {
-            let val = escodegen.generate(ast.declarations[decl].init).replace(key, values[key]);
-            values[ast.declarations[decl].id.name] = val;
-        });
-    }
+function removeFromFather(ast, father){
     for(var row in father)
         if(jsonEqual(father[row], ast)){
             father.splice(row, 1);
             global_i--;
         }
+}
 
+function parseExpressionStatement(ast, father){
+    let replaceStr = replaceSingleExpr(ast.expression.right, true);
+    values[escodegen.generate(ast.expression.left)] = '('+replaceStr+')';
+    ast.expression.right = esprima.parseScript(replaceStr).body[0].expression;
+    if(!input_vector.includes(ast.expression.left.name))
+        removeFromFather(ast, father);
+}
+
+function parseVariableDeclaration(ast, father){
+    for(let decl in ast.declarations){
+        let replaceStr = escodegen.generate(ast.declarations[decl].init)
+        Object.keys(values).forEach(function(key) {
+            replaceStr = replaceStr.replace(key, values[key]);
+        });
+        values[ast.declarations[decl].id.name] = '('+replaceStr+')';
+    }
+    removeFromFather(ast, father);
 }
 
 function parseFunctionDeclaration(ast, father){
-    for(var param in ast.params)
+    for(var param in ast.params){
         values[ast.params[param].name] = ast.params[param].name;
+        input_vector.push(ast.params[param].name);
+    }
+}
+
+function parseWhileStatement(ast, father){
+    ast.test = replaceSingleExpr(ast.test);
+}
+
+function parseReturnStatement(ast, father){
+    ast.argument = replaceSingleExpr(ast.argument);
+}
+
+function parseIfStatement(ast, father){
+    ast.test = replaceSingleExpr(ast.test);
+    let old_values = JSON.parse(JSON.stringify(values));
+    substitute(ast.consequent);
+    values = JSON.parse(JSON.stringify(old_values));
+    substitute(ast.alternate);
+    values = JSON.parse(JSON.stringify(old_values));
+}
+
+function replaceSingleExpr(exprAst, raw=false){
+    let replacedExpr = escodegen.generate(exprAst);
+    Object.keys(values).forEach(function (key) {
+        replacedExpr = replacedExpr.replace(key, values[key]);
+    });
+    if(raw)
+        return replacedExpr;
+    return esprima.parseScript(replacedExpr).body[0].expression;
 }
 
 var parseFunctions = {
     'ExpressionStatement': parseExpressionStatement,
     'VariableDeclaration': parseVariableDeclaration,
-    'FunctionDeclaration': parseFunctionDeclaration
+    'FunctionDeclaration': parseFunctionDeclaration,
+    'IfStatement': parseIfStatement,
+    'ReturnStatement': parseReturnStatement,
+    'WhileStatement': parseWhileStatement
 };
 
-function substitute (ast, father=null){
-    console.log(values);
+function substitute(ast, father=null){
     if(ast == null)
         return;
     if(parseFunctions.hasOwnProperty(ast.type))
@@ -74,3 +114,4 @@ function substitute (ast, father=null){
 
 export {substitute};
 export {parseCode};
+export {resetCodeParams};
