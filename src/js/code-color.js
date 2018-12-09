@@ -21,15 +21,11 @@ function parseBody(ast, rows){
         color(ast.body);
 }
 
-function parseReturnStatement(ast, father){
-}
-
 function parseIfStatement(ast){
     let replacedExpr = escodegen.generate(ast.test);
     Object.keys(global_input_vector).forEach(function (key) {
         replacedExpr = replacedExpr.replace(key, global_input_vector[key]);
     });
-    console.log(replacedExpr);
     if(eval(replacedExpr))
         green_lines.push(ast.loc.start.line);
     else
@@ -40,7 +36,6 @@ function parseIfStatement(ast){
 
 var parseFunctions = {
     'IfStatement': parseIfStatement,
-    'ReturnStatement': parseReturnStatement,
 };
 
 function color(ast, input_vector){
@@ -51,7 +46,7 @@ function color(ast, input_vector){
     if(parseFunctions.hasOwnProperty(ast.type))
         parseFunctions[ast.type](ast);
     if(ast.hasOwnProperty('body')){
-        let res = parseBody(ast);
+        parseBody(ast);
         if(ast.type == 'Program')
             return [green_lines, red_lines];
     }

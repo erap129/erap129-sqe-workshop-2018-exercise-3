@@ -4,11 +4,13 @@ import * as escodegen from 'escodegen';
 var values = {};
 var input_vector = [];
 var global_i = 0;
+var inFunction = false;
 
 function resetCodeParams(){
     values = {};
     input_vector = [];
     global_i = [];
+    inFunction = false;
 }
 
 function jsonEqual(a,b) {
@@ -19,15 +21,22 @@ const parseCode = (codeToParse) => {
     return esprima.parseScript(codeToParse, {loc:true});
 };
 
+const parseCodeNoLoc = (codeToParse) => {
+    return esprima.parseScript(codeToParse);
+};
+
 function parseBody(ast){
+    if(ast.type == 'FunctionDeclaration')
+        inFunction = true;
     if(ast.body.constructor === Array){
         for (global_i = 0; global_i < ast.body.length; global_i++)
-            substitute(ast.body[global_i], ast.body)
+            substitute(ast.body[global_i], ast.body);
         if(ast.type == 'Program')
             return ast;
     }
     else
         substitute(ast.body, ast);
+    inFunction = false;
 }
 
 function removeFromFather(ast, father){
@@ -42,37 +51,38 @@ function parseExpressionStatement(ast, father){
     let replaceStr = replaceSingleExpr(ast.expression.right, true);
     values[escodegen.generate(ast.expression.left)] = '('+replaceStr+')';
     ast.expression.right = esprima.parseScript(replaceStr).body[0].expression;
-    if(!input_vector.includes(ast.expression.left.name))
+    if(!input_vector.includes(ast.expression.left.name) && inFunction)
         removeFromFather(ast, father);
 }
 
 function parseVariableDeclaration(ast, father){
     for(let decl in ast.declarations){
-        let replaceStr = escodegen.generate(ast.declarations[decl].init)
+        let replaceStr = escodegen.generate(ast.declarations[decl].init);
         Object.keys(values).forEach(function(key) {
             replaceStr = replaceStr.replace(key, values[key]);
         });
         values[ast.declarations[decl].id.name] = '('+replaceStr+')';
     }
-    removeFromFather(ast, father);
+    if(inFunction)
+        removeFromFather(ast, father);
 }
 
-function parseFunctionDeclaration(ast, father){
+function parseFunctionDeclaration(ast){
     for(var param in ast.params){
         values[ast.params[param].name] = ast.params[param].name;
         input_vector.push(ast.params[param].name);
     }
 }
 
-function parseWhileStatement(ast, father){
+function parseWhileStatement(ast){
     ast.test = replaceSingleExpr(ast.test);
 }
 
-function parseReturnStatement(ast, father){
+function parseReturnStatement(ast){
     ast.argument = replaceSingleExpr(ast.argument);
 }
 
-function parseIfStatement(ast, father){
+function parseIfStatement(ast){
     ast.test = replaceSingleExpr(ast.test);
     let old_values = JSON.parse(JSON.stringify(values));
     substitute(ast.consequent);
@@ -114,4 +124,5 @@ function substitute(ast, father=null){
 
 export {substitute};
 export {parseCode};
+export {parseCodeNoLoc};
 export {resetCodeParams};
