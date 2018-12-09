@@ -36,7 +36,8 @@ function parseBody(ast){
     }
     else
         substitute(ast.body, ast);
-    inFunction = false;
+    if(ast.type == 'FunctionDeclaration')
+        inFunction = false;
 }
 
 function removeFromFather(ast, father){
