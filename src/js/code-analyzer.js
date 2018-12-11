@@ -27,7 +27,7 @@ const parseCodeNoLoc = (codeToParse) => {
 
 function parseBody(ast){
     if(ast.type == 'FunctionDeclaration')
-        inFunction = true;
+        return parseBodyFuncDecl(ast);
     if(ast.body.constructor === Array){
         for (global_i = 0; global_i < ast.body.length; global_i++)
             substitute(ast.body[global_i], ast.body);
@@ -36,8 +36,12 @@ function parseBody(ast){
     }
     else
         substitute(ast.body, ast);
-    if(ast.type == 'FunctionDeclaration')
-        inFunction = false;
+}
+
+function parseBodyFuncDecl(ast){
+    inFunction = true;
+    substitute(ast.body, ast);
+    inFunction = false;
 }
 
 function removeFromFather(ast, father){

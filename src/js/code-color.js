@@ -13,12 +13,12 @@ function resetColorParams(){
 function parseBody(ast, rows){
     if(ast.body.constructor === Array){
         for(var row in ast.body)
-            color(ast.body[row]);
+            colorRecur(ast.body[row]);
         if(ast.type == 'Program')
             return rows;
     }
     else
-        color(ast.body);
+        colorRecur(ast.body);
 }
 
 function parseIfStatement(ast){
@@ -30,17 +30,20 @@ function parseIfStatement(ast){
         green_lines.push(ast.loc.start.line);
     else
         red_lines.push(ast.loc.start.line);
-    color(ast.consequent);
-    color(ast.alternate);
+    colorRecur(ast.consequent);
+    colorRecur(ast.alternate);
 }
 
 var parseFunctions = {
     'IfStatement': parseIfStatement,
 };
 
-function color(ast, input_vector){
-    if(typeof(input_vector) == "string")
-        global_input_vector = JSON.parse(input_vector)
+function color(ast, input_vector) {
+    global_input_vector = JSON.parse(input_vector);
+    return colorRecur(ast);
+}
+
+function colorRecur(ast){
     if(ast == null)
         return;
     if(parseFunctions.hasOwnProperty(ast.type))
