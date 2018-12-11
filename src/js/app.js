@@ -13,8 +13,8 @@ $(document).ready(function () {
         let parsedCode = parseCode(codeToParse);
         let substitution = substitute(parsedCode);
         substitution = parseCode(escodegen.generate(substitution));
-        let input_vector = JSON.stringify({x: 1, y: 2, z: 3});
-        let lines = color(substitution, input_vector);
+        let inputVector = $('#inputVector').val();
+        let lines = color(substitution, inputVector);
         printColoredLines(escodegen.generate(substitution), lines);
         $('#beforeEscodegen').val(JSON.stringify(substitution, null, 2));
     });

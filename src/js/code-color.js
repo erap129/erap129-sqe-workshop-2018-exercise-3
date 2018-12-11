@@ -39,8 +39,8 @@ var parseFunctions = {
 };
 
 function color(ast, input_vector){
-    input_vector = {x: 1, y: 2, z: 3};
-    global_input_vector = input_vector;
+    if(typeof(input_vector) == "string")
+        global_input_vector = JSON.parse(input_vector)
     if(ast == null)
         return;
     if(parseFunctions.hasOwnProperty(ast.type))
