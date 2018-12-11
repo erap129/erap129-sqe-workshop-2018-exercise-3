@@ -126,4 +126,21 @@ describe('The javascript parser', () => {
             [[],[2, 4]]
         );
     });
+
+    it('test5_color', () => {
+        assert.deepEqual(
+            color(parseCode(escodegen.generate(substitute(parseCode(
+                'function testFunc(x,y){\n' +
+                '    let c = 3;\n' +
+                '    if(x+c>y)\n' +
+                '       x = x+1;\n' +
+                '    else if(x+c<y)\n' +
+                '       x = x-1;\n' +
+                '    else if(x+c>y)\n' +
+                '       x = x+1;\n' +
+                '}'
+            )))), '{"x": 1, "y": 2}'),
+            [[2, 6],[4]]
+        );
+    });
 });
