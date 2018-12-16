@@ -25,9 +25,7 @@ const parseCodeNoLoc = (codeToParse) => {
     return esprima.parseScript(codeToParse);
 };
 
-function parseBody(ast){
-    if(ast.type == 'FunctionDeclaration' && !inFunction)
-        return parseBodyFuncDecl(ast);
+function parseRegularBody(ast){
     if(ast.body.constructor === Array){
         let prev_global_i = global_i;
         global_i = 0;
@@ -42,10 +40,16 @@ function parseBody(ast){
         substitute(ast.body, ast);
 }
 
+function parseBody(ast){
+    if(ast.type == 'FunctionDeclaration' && !inFunction)
+        return parseBodyFuncDecl(ast);
+    return parseRegularBody(ast);
+}
+
 function parseBodyFuncDecl(ast){
     inFunction = true;
     // substitute(ast.body, ast);
-    parseBody(ast, true)
+    parseRegularBody(ast);
     inFunction = false;
 }
 
