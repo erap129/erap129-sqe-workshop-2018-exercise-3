@@ -9,7 +9,7 @@ var inFunction = false;
 function resetCodeParams(){
     values = {};
     input_vector = [];
-    global_i = [];
+    global_i = 0;
     inFunction = false;
 }
 
@@ -26,13 +26,17 @@ const parseCodeNoLoc = (codeToParse) => {
 };
 
 function parseBody(ast){
-    if(ast.type == 'FunctionDeclaration')
+    if(ast.type == 'FunctionDeclaration' && !inFunction)
         return parseBodyFuncDecl(ast);
     if(ast.body.constructor === Array){
-        for (global_i = 0; global_i < ast.body.length; global_i++)
+        let prev_global_i = global_i;
+        global_i = 0;
+        for (;global_i < ast.body.length; global_i++)
             substitute(ast.body[global_i], ast.body);
-        if(ast.type == 'Program')
+        if(ast.type == 'Program'){
             return ast;
+        }
+        global_i = prev_global_i;
     }
     else
         substitute(ast.body, ast);
@@ -40,7 +44,8 @@ function parseBody(ast){
 
 function parseBodyFuncDecl(ast){
     inFunction = true;
-    substitute(ast.body, ast);
+    // substitute(ast.body, ast);
+    parseBody(ast, true)
     inFunction = false;
 }
 
@@ -60,13 +65,29 @@ function parseExpressionStatement(ast, father){
         removeFromFather(ast, father);
 }
 
-function parseVariableDeclaration(ast, father){
-    for(let decl in ast.declarations){
-        let replaceStr = escodegen.generate(ast.declarations[decl].init);
+function storeArray(ast){
+    let count = 0;
+    for(let item in ast.init.elements){
+        let replaceStr = escodegen.generate(ast.init.elements[item]);
         Object.keys(values).forEach(function(key) {
             replaceStr = replaceStr.replace(key, values[key]);
         });
-        values[ast.declarations[decl].id.name] = '('+replaceStr+')';
+        values[ast.id.name + '[' + count + ']'] = '('+replaceStr+')';
+        count++;
+    }
+}
+
+function parseVariableDeclaration(ast, father){
+    for(let decl in ast.declarations){
+        if(ast.declarations[decl].init.type == 'ArrayExpression')
+            storeArray(ast.declarations[decl]);
+        else{
+            let replaceStr = escodegen.generate(ast.declarations[decl].init);
+            Object.keys(values).forEach(function(key) {
+                replaceStr = replaceStr.replace(key, values[key]);
+            });
+            values[ast.declarations[decl].id.name] = '('+replaceStr+')';
+        }
     }
     if(inFunction)
         removeFromFather(ast, father);
@@ -99,7 +120,9 @@ function parseIfStatement(ast){
 function replaceSingleExpr(exprAst, raw=false){
     let replacedExpr = escodegen.generate(exprAst);
     Object.keys(values).forEach(function (key) {
-        replacedExpr = replacedExpr.replace(key, values[key]);
+        if(!input_vector.includes(key)) {
+            replacedExpr = replacedExpr.replace(key, values[key]);
+        }
     });
     if(raw)
         return replacedExpr;

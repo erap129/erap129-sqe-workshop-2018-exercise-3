@@ -201,25 +201,26 @@ describe('The javascript parser', () => {
         );
     });
 
-    it('test9_substitution', () => {
+    it('test9_substitution_array', () => {
         assert.equal(
             escodegen.generate(substitute(parseCode('function foo(x, y, z){\n' +
                 '    let a = x + 1;\n' +
                 '    let b = a + y;\n' +
                 '    let c = 0;\n' +
+                '    let d = [1,2];\n' +
                 '    \n' +
                 '    while (a < z) {\n' +
                 '        c = a + b;\n' +
                 '        z = c * 4;\n' +
                 '    }\n' +
                 '    \n' +
-                '    return z;\n' +
+                '    return z + d[0];\n' +
                 '}'))),
             'function foo(x, y, z) {\n' +
             '    while (x + 1 < z) {\n' +
             '        z = (x + 1 + (x + 1 + y)) * 4;\n' +
             '    }\n' +
-            '    return z;\n' +
+            '    return z + 1;\n' +
             '}'
         );
     });
