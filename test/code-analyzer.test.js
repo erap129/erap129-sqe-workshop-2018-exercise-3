@@ -160,4 +160,67 @@ describe('The javascript parser', () => {
             [[3, 7],[5]]
         );
     });
+
+    it('test7_color', () => {
+        assert.deepEqual(
+            color(parseCode(escodegen.generate(substitute(parseCode(
+                'function testFunc(x,y){\n' +
+                '    let c = 3;\n' +
+                '    if(x+c>y)\n' +
+                '       x = x+1;\n' +
+                '    else if(x+c>y)\n' +
+                '       x = x-1;\n' +
+                '    else if(x+c>y)\n' +
+                '       x = x+1;\n' +
+                '}'
+            )))), '{"x": 1, "y": 2}'),
+            [[2, 4, 6],[]]
+        );
+    });
+
+    it('test8_substitution', () => {
+        assert.equal(
+            escodegen.generate(substitute(parseCode('function foo(x, y, z){\n' +
+                '    let a = x + 1;\n' +
+                '    let b = a + y;\n' +
+                '    let c = 0;\n' +
+                '    \n' +
+                '    while (a < z) {\n' +
+                '        c = a + b;\n' +
+                '        z = c * 3;\n' +
+                '    }\n' +
+                '    \n' +
+                '    return z;\n' +
+                '}'))),
+            'function foo(x, y, z) {\n' +
+            '    while (x + 1 < z) {\n' +
+            '        z = (x + 1 + (x + 1 + y)) * 3;\n' +
+            '    }\n' +
+            '    return z;\n' +
+            '}'
+        );
+    });
+
+    it('test9_substitution', () => {
+        assert.equal(
+            escodegen.generate(substitute(parseCode('function foo(x, y, z){\n' +
+                '    let a = x + 1;\n' +
+                '    let b = a + y;\n' +
+                '    let c = 0;\n' +
+                '    \n' +
+                '    while (a < z) {\n' +
+                '        c = a + b;\n' +
+                '        z = c * 4;\n' +
+                '    }\n' +
+                '    \n' +
+                '    return z;\n' +
+                '}'))),
+            'function foo(x, y, z) {\n' +
+            '    while (x + 1 < z) {\n' +
+            '        z = (x + 1 + (x + 1 + y)) * 4;\n' +
+            '    }\n' +
+            '    return z;\n' +
+            '}'
+        );
+    });
 });
