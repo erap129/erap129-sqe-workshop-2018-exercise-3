@@ -11,7 +11,7 @@ function addAllNodes(graphScript, graph){
         let nodeLabel = (i+1) + '\n' + n.label;
         graphScript += 'node_' + i + ' [label="' + nodeLabel + '"';
         if(n.isColor)
-            graphScript += ' style=filled fillcolor=green;'
+            graphScript += ' style=filled fillcolor=green;';
         let shape = 'box';
         if(n.true)
             shape = 'diamond';

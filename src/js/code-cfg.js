@@ -9,9 +9,7 @@ function makeGraph(code){
     graph = cleanEntryExit(graph);
     for(let n in graph)
         graph[n].label = escodegen.generate(graph[n].astNode);
-    console.log(graph);
     fixNormal(graph);
-    console.log(graph);
     return graph;
 }
 

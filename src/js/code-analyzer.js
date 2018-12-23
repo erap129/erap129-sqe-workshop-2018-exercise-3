@@ -132,6 +132,10 @@ function colorCode(graph, ast, input_vector) {
         values[key] = global_input_vector[key];
     });
     substitute(ast);
+    colorCodeCont(graph);
+}
+
+function colorCodeCont(graph){
     let currNode = graph[0];
     while(currNode.type != 'exit'){
         currNode.isColor = true;
