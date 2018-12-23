@@ -1,16 +1,8 @@
 import assert from 'assert';
-import {parseCode, resetCodeParams} from '../src/js/code-analyzer';
-import {parseCodeNoLoc} from '../src/js/code-analyzer';
-import {substitute} from '../src/js/code-analyzer';
-import {color, resetColorParams} from '../src/js/code-color';
-import * as escodegen from 'escodegen';
+import {parseCode, parseCodeNoLoc, colorCode} from '../src/js/code-analyzer';
+import {makeGraph} from '../src/js/code-cfg';
 
 describe('The javascript parser', () => {
-
-    beforeEach(function() {
-        resetColorParams();
-        resetCodeParams();
-    });
 
     it('is parsing an empty function correctly', () => {
         assert.equal(
@@ -26,202 +18,70 @@ describe('The javascript parser', () => {
         );
     });
 
-    it('test1_substitution', () => {
-        assert.equal(
-            escodegen.generate(substitute(parseCode('function foo(x, y, z){\n' +
-           '    let a = x + 1;\n' +
-           '    let b = a + y;\n' +
-           '    let c = 0;\n' +
-           '    \n' +
-           '    if (b < z) {\n' +
-           '        c = c + 5;\n' +
-           '        return x + y + z + c;\n' +
-           '    } else if (b < z * 2) {\n' +
-           '        c = c + x + 5;\n' +
-           '        return x + y + z + c;\n' +
-           '    } else {\n' +
-           '        c = c + z + 5;\n' +
-           '        return x + y + z + c;\n' +
-           '    }\n' +
-           '}'))),
-            'function foo(x, y, z) {\n' +
-           '    if (x + 1 + y < z) {\n' +
-           '        return x + y + z + (0 + 5);\n' +
-           '    } else if (x + 1 + y < z * 2) {\n' +
-           '        return x + y + z + (0 + x + 5);\n' +
-           '    } else {\n' +
-           '        return x + y + z + (0 + z + 5);\n' +
-           '    }\n' +
-           '}'
-        );
+    it('testing code color for simple function graph', () => {
+        let func = 'function testFunc(a){\n' +
+            'let b = a + 1;\n' +
+            'return a;\n' +
+            '}';
+        let inputVector = '{"a":1}';
+        let graph = makeGraph(parseCode(func));
+        colorCode(graph, parseCode(func), inputVector);
+        assert.equal(graph[0].label, 'let b = a + 1;');
+        assert.equal(graph[0].isColor, true);
+        assert.equal(graph[1].label, 'return a;');
+        assert.equal(graph[1].isColor, true);
     });
 
-    it('test2_substitution', () => {
-        assert.equal(
-            escodegen.generate(substitute(parseCode('function foo(x, y, z){\n' +
-                '    let a = x + 1;\n' +
-                '    let b = a + y;\n' +
-                '    let c = 0;\n' +
-                '    \n' +
-                '    while (a < z) {\n' +
-                '        c = a + b;\n' +
-                '        z = c * 2;\n' +
-                '    }\n' +
-                '    \n' +
-                '    return z;\n' +
-                '}'))),
-            'function foo(x, y, z) {\n' +
-            '    while (x + 1 < z) {\n' +
-            '        z = (x + 1 + (x + 1 + y)) * 2;\n' +
-            '    }\n' +
-            '    return z;\n' +
-            '}'
-        );
+    it('testing code color for function with if', () => {
+        let func = 'function ifFunc(a){\n' +
+            'let b = a + 1;\n' +
+            'if(b > 2){\n' +
+            '   b = b + 1;\n' +
+            '}\n' +
+            'else{\n' +
+            '   b = b-1;\n' +
+            '}\n' +
+            'return b + a;\n' +
+            '}';
+        let graph = makeGraph(parseCode(func));
+        let inputVector = '{"a":1}';
+        colorCode(graph, parseCode(func), inputVector);
+        assert.equal(graph[1].true, graph[2]);
+        assert.equal(graph[1].false, graph[4]);
+
+        assert.equal(graph[0].label, 'let b = a + 1;');
+        assert.equal(graph[0].isColor, true);
+        assert.equal(graph[1].label, 'b > 2');
+        assert.equal(graph[1].isColor, true);
+        assert.equal(graph[2].label, 'b = b + 1');
+        assert.equal(graph[2].isColor, undefined);
+        assert.equal(graph[4].label, 'b = b - 1');
+        assert.equal(graph[4].isColor, true);
+        assert.equal(graph[3].label, 'return b + a;');
+        assert.equal(graph[3].isColor, true);
     });
 
-    it('test3_color', () => {
-        assert.deepEqual(
-            color(parseCode(escodegen.generate(substitute(parseCode(
-                'function foo(x, y, z){\n'+
-                '    let a = x + 1;\n'+
-                '    let b = a + y;\n'+
-                '    let c = 0;\n'+
-                '    \n'+
-                '    if (b < z) {\n'+
-                '        c = c + 5;\n'+
-                '        return x + y + z + c;\n'+
-                '    } else if (b < z * 2) {\n'+
-                '        c = c + x + 5;\n'+
-                '        return x + y + z + c;\n'+
-                '    } else {\n'+
-                '        c = c + z + 5;\n'+
-                '        return x + y + z + c;\n'+
-                '    }\n'+
-                '}'
-            )))), '{"x": 1, "y": 2, "z": 3}'),
-            [[4],[2]]
-        );
-    });
+    it('testing code color for function with while', () => {
+        let func = 'function whileFunc(a){\n' +
+            'let b = a + 1;\n' +
+            'while(b > 2){\n' +
+            '   a = b + 1;\n' +
+            '}\n' +
+            'return b + a;\n' +
+            '}';
+        let graph = makeGraph(parseCode(func));
+        let inputVector = '{"a":1}';
+        colorCode(graph, parseCode(func), inputVector);
+        assert.equal(graph[1].true, graph[2]);
+        assert.equal(graph[1].false, graph[3]);
 
-    it('test4_color', () => {
-        assert.deepEqual(
-            color(parseCode(escodegen.generate(substitute(parseCode(
-                'function foo(x, y, z){\n'+
-                '    let a = x + 1;\n'+
-                '    let b = a + y;\n'+
-                '    let c = 0;\n'+
-                '    \n'+
-                '    if (b < z) {\n'+
-                '        c = c + 5;\n'+
-                '        return x + y + z + c;\n'+
-                '    } else if (b < z * 2) {\n'+
-                '        c = c + x + 5;\n'+
-                '        return x + y + z + c;\n'+
-                '    } else {\n'+
-                '        c = c + z + 5;\n'+
-                '        return x + y + z + c;\n'+
-                '    }\n'+
-                '}'
-            )))), '{"x": 7, "y": 2, "z": 3}'),
-            [[],[2, 4]]
-        );
-    });
-
-    it('test5_color', () => {
-        assert.deepEqual(
-            color(parseCode(escodegen.generate(substitute(parseCode(
-                'function testFunc(x,y){\n' +
-                '    let c = 3;\n' +
-                '    if(x+c>y)\n' +
-                '       x = x+1;\n' +
-                '    else if(x+c<y)\n' +
-                '       x = x-1;\n' +
-                '    else if(x+c>y)\n' +
-                '       x = x+1;\n' +
-                '}'
-            )))), '{"x": 1, "y": 2}'),
-            [[2, 6],[4]]
-        );
-    });
-
-    it('test6_color_with_global', () => {
-        assert.deepEqual(
-            color(parseCode(escodegen.generate(substitute(parseCode(
-                'let glob = 3;\n' +
-                'function testFunc(x,y){\n' +
-                '    if(x+glob>y)\n' +
-                '       x = x+1;\n' +
-                '    else if(x+glob<y)\n' +
-                '       x = x-1;\n' +
-                '    else if(x+glob>y)\n' +
-                '       x = x+1;\n' +
-                '}'
-            )))), '{"x": 1, "y": 2}'),
-            [[3, 7],[5]]
-        );
-    });
-
-    it('test7_color', () => {
-        assert.deepEqual(
-            color(parseCode(escodegen.generate(substitute(parseCode(
-                'function testFunc(x,y){\n' +
-                '    let c = 3;\n' +
-                '    if(x+c>y)\n' +
-                '       x = x+1;\n' +
-                '    else if(x+c>y)\n' +
-                '       x = x-1;\n' +
-                '    else if(x+c>y)\n' +
-                '       x = x+1;\n' +
-                '}'
-            )))), '{"x": 1, "y": 2}'),
-            [[2, 4, 6],[]]
-        );
-    });
-
-    it('test8_substitution', () => {
-        assert.equal(
-            escodegen.generate(substitute(parseCode('function foo(x, y, z){\n' +
-                '    let a = x + 1;\n' +
-                '    let b = a + y;\n' +
-                '    let c = 0;\n' +
-                '    \n' +
-                '    while (a < z) {\n' +
-                '        c = a + b;\n' +
-                '        z = c * 3;\n' +
-                '    }\n' +
-                '    \n' +
-                '    return z;\n' +
-                '}'))),
-            'function foo(x, y, z) {\n' +
-            '    while (x + 1 < z) {\n' +
-            '        z = (x + 1 + (x + 1 + y)) * 3;\n' +
-            '    }\n' +
-            '    return z;\n' +
-            '}'
-        );
-    });
-
-    it('test9_substitution_array', () => {
-        assert.equal(
-            escodegen.generate(substitute(parseCode('function foo(x, y, z){\n' +
-                '    let a = x + 1;\n' +
-                '    let b = a + y;\n' +
-                '    let c = 0;\n' +
-                '    let d = [1,2];\n' +
-                '    \n' +
-                '    while (a < z) {\n' +
-                '        c = a + b;\n' +
-                '        z = c * 4;\n' +
-                '    }\n' +
-                '    \n' +
-                '    return z + d[0];\n' +
-                '}'))),
-            'function foo(x, y, z) {\n' +
-            '    while (x + 1 < z) {\n' +
-            '        z = (x + 1 + (x + 1 + y)) * 4;\n' +
-            '    }\n' +
-            '    return z + 1;\n' +
-            '}'
-        );
+        assert.equal(graph[0].label, 'let b = a + 1;');
+        assert.equal(graph[0].isColor, true);
+        assert.equal(graph[1].label, 'b > 2');
+        assert.equal(graph[1].isColor, true);
+        assert.equal(graph[2].label, 'a = b + 1');
+        assert.equal(graph[2].isColor, undefined);
+        assert.equal(graph[3].label, 'return b + a;');
+        assert.equal(graph[3].isColor, true);
     });
 });

@@ -1,5 +1,4 @@
 function createGraphScript(graph){
-    console.log(graph);
     let graphScript = 'digraph {';
     graphScript = addAllNodes(graphScript, graph);
     graphScript = addAllEdges(graphScript, graph);
@@ -13,7 +12,12 @@ function addAllNodes(graphScript, graph){
         graphScript += 'node_' + i + ' [label="' + nodeLabel + '"';
         if(n.isColor)
             graphScript += ' style=filled fillcolor=green;'
-        graphScript += ' shape=box]\n';
+        let shape = 'box';
+        if(n.true)
+            shape = 'diamond';
+        if(n.false)
+            shape = 'diamond';
+        graphScript += ' shape=' + shape + ']\n';
     }
     return graphScript;
 }
@@ -21,7 +25,6 @@ function addAllNodes(graphScript, graph){
 function addAllEdges(graphScript, graph){
     for(const [i, n] of graph.entries()){
         graphScript = addEdgesForNode(n, i, graph, graphScript);
-        console.log(graphScript);
     }
     return graphScript;
 }

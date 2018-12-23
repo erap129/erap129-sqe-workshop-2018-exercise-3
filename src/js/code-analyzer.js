@@ -5,18 +5,6 @@ var values = {};
 var input_vector = [];
 var global_i = 0;
 var inFunction = false;
-var global_input_vector = {};
-
-function resetCodeParams(){
-    values = {};
-    input_vector = [];
-    global_i = 0;
-    inFunction = false;
-}
-
-function jsonEqual(a,b) {
-    return JSON.stringify(a) === JSON.stringify(b);
-}
 
 const parseCode = (codeToParse) => {
     return esprima.parseScript(codeToParse, {loc:true});
@@ -53,12 +41,9 @@ function parseBodyFuncDecl(ast){
     inFunction = false;
 }
 
-function parseExpressionStatement(ast, father){
+function parseExpressionStatement(ast){
     let replaceStr = replaceSingleExpr(ast.expression.right, true);
     values[escodegen.generate(ast.expression.left)] = '('+replaceStr+')';
-    // ast.expression.right = esprima.parseScript(replaceStr).body[0].expression;
-    // if(!input_vector.includes(ast.expression.left.name) && inFunction)
-    //     removeFromFather(ast, father);
 }
 
 function storeArray(ast){
@@ -73,7 +58,7 @@ function storeArray(ast){
     }
 }
 
-function parseVariableDeclaration(ast, father){
+function parseVariableDeclaration(ast){
     for(let decl in ast.declarations){
         if(ast.declarations[decl].init.type == 'ArrayExpression')
             storeArray(ast.declarations[decl]);
@@ -85,13 +70,10 @@ function parseVariableDeclaration(ast, father){
             values[ast.declarations[decl].id.name] = '('+replaceStr+')';
         }
     }
-    // if(inFunction)
-    //     removeFromFather(ast, father);
 }
 
 function parseFunctionDeclaration(ast){
     for(var param in ast.params){
-        // values[ast.params[param].name] = ast.params[param].name;
         input_vector.push(ast.params[param].name);
     }
 }
@@ -174,5 +156,4 @@ function colorCode(graph, ast, input_vector) {
 export {substitute};
 export {parseCode};
 export {parseCodeNoLoc};
-export {resetCodeParams};
 export {colorCode};

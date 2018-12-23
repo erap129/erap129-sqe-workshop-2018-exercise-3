@@ -4,10 +4,14 @@ import * as esgraph from 'esgraph';
 function makeGraph(code){
     let func = code.body.filter(exp => exp.type == 'FunctionDeclaration')[0].body;
     let graph = esgraph(func)[2];
-    graph.forEach(n => delete n.exception); // delete exceptions
+    for(let n in graph)
+        delete graph[n].exception;
     graph = cleanEntryExit(graph);
-    graph.forEach(n => n.label = escodegen.generate(n.astNode));
+    for(let n in graph)
+        graph[n].label = escodegen.generate(graph[n].astNode);
+    console.log(graph);
     fixNormal(graph);
+    console.log(graph);
     return graph;
 }
 
