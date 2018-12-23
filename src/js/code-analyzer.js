@@ -5,6 +5,7 @@ var values = {};
 var input_vector = [];
 var global_i = 0;
 var inFunction = false;
+var global_input_vector = {};
 
 function resetCodeParams(){
     values = {};
@@ -48,25 +49,16 @@ function parseBody(ast){
 
 function parseBodyFuncDecl(ast){
     inFunction = true;
-    // substitute(ast.body, ast);
     parseRegularBody(ast);
     inFunction = false;
-}
-
-function removeFromFather(ast, father){
-    for(var row in father)
-        if(jsonEqual(father[row], ast)){
-            father.splice(row, 1);
-            global_i--;
-        }
 }
 
 function parseExpressionStatement(ast, father){
     let replaceStr = replaceSingleExpr(ast.expression.right, true);
     values[escodegen.generate(ast.expression.left)] = '('+replaceStr+')';
-    ast.expression.right = esprima.parseScript(replaceStr).body[0].expression;
-    if(!input_vector.includes(ast.expression.left.name) && inFunction)
-        removeFromFather(ast, father);
+    // ast.expression.right = esprima.parseScript(replaceStr).body[0].expression;
+    // if(!input_vector.includes(ast.expression.left.name) && inFunction)
+    //     removeFromFather(ast, father);
 }
 
 function storeArray(ast){
@@ -93,13 +85,13 @@ function parseVariableDeclaration(ast, father){
             values[ast.declarations[decl].id.name] = '('+replaceStr+')';
         }
     }
-    if(inFunction)
-        removeFromFather(ast, father);
+    // if(inFunction)
+    //     removeFromFather(ast, father);
 }
 
 function parseFunctionDeclaration(ast){
     for(var param in ast.params){
-        values[ast.params[param].name] = ast.params[param].name;
+        // values[ast.params[param].name] = ast.params[param].name;
         input_vector.push(ast.params[param].name);
     }
 }
@@ -142,19 +134,45 @@ var parseFunctions = {
     'WhileStatement': parseWhileStatement
 };
 
-function substitute(ast, father=null){
+function substitute(ast){
     if(ast == null)
         return;
     if(parseFunctions.hasOwnProperty(ast.type))
-        parseFunctions[ast.type](ast, father);
+        parseFunctions[ast.type](ast);
     if(ast.hasOwnProperty('body')){
-        let res = parseBody(ast);
-        if(ast.type == 'Program')
-            return res;
+        parseBody(ast);
     }
 }
+
+function colorCode(graph, ast, input_vector) {
+    let global_input_vector = JSON.parse(input_vector);
+    Object.keys(global_input_vector).forEach(function (key) {
+        values[key] = global_input_vector[key];
+    });
+    substitute(ast);
+    let currNode = graph[0];
+    while(currNode.type != 'exit'){
+        currNode.isColor = true;
+        if(currNode.normal){
+            currNode = currNode.normal;
+        }
+        else{
+            let nodeLabel = currNode.label;
+            Object.keys(values).forEach(function (key) {
+                nodeLabel = nodeLabel.replace(key, values[key]);
+            });
+            if(eval(nodeLabel))
+                currNode = currNode.true;
+            else
+                currNode = currNode.false;
+        }
+    }
+    currNode.isColor = true;
+}
+
 
 export {substitute};
 export {parseCode};
 export {parseCodeNoLoc};
 export {resetCodeParams};
+export {colorCode};
