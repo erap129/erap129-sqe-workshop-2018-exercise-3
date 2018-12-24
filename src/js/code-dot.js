@@ -7,35 +7,39 @@ function createGraphScript(graph){
 }
 
 function addAllNodes(graphScript, graph){
-    for(const [i, n] of graph.entries()){
-        let nodeLabel = (i+1) + '\n' + n.label;
-        graphScript += 'node_' + i + ' [label="' + nodeLabel + '"';
-        if(n.isColor)
-            graphScript += ' style=filled fillcolor=green;';
+    for(let i=0; i<graph.length; i++){
+        graphScript += 'node_' + i + ' [label="' + (i+1) + '\n' + graph[i].label + '"';
         let shape = 'box';
-        if(n.true)
+        if(graph[i].true || graph[i].false)
             shape = 'diamond';
-        if(n.false)
-            shape = 'diamond';
-        graphScript += ' shape=' + shape + ']\n';
+        graphScript += ' shape=' + shape;
+        if(graph[i].isColor)
+            graphScript += ' style=filled fillcolor=green';
+        graphScript += ']\n';
     }
     return graphScript;
 }
 
 function addAllEdges(graphScript, graph){
-    for(const [i, n] of graph.entries()){
-        graphScript = addEdgesForNode(n, i, graph, graphScript);
+    for(let i=0; i<graph.length; i++){
+        if(graph[i].normal){
+            let node2Ind = graph.indexOf(graph[i].normal);
+            graphScript = addEdge(i, node2Ind, graphScript);
+        }
+        if(graph[i].true){
+            let node2Ind = graph.indexOf(graph[i].true);
+            graphScript = addEdge(i, node2Ind, graphScript);
+        }
+        if(graph[i].false){
+            let node2Ind = graph.indexOf(graph[i].false);
+            graphScript = addEdge(i, node2Ind, graphScript);
+        }
     }
     return graphScript;
 }
 
-function addEdgesForNode(n, i, graph, graphScript){
-    for(let edgeType of ['normal', 'true', 'false']){
-        if(!n[edgeType])
-            continue;
-        graphScript += 'node_' + i + '->' + 'node_' + graph.indexOf(n[edgeType]);
-        graphScript += '\n';
-    }
+function addEdge(ind_1, ind_2, graphScript){
+    graphScript += 'node_' + ind_1 + ' -> ' + 'node_' + ind_2 + '\n';
     return graphScript;
 }
 

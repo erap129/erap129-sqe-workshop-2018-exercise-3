@@ -2,9 +2,7 @@ import $ from 'jquery';
 import {parseCode} from './code-analyzer';
 import {makeGraph} from './code-cfg';
 import {createGraphScript} from './code-dot.js';
-import {Module, render} from 'viz.js/full.render.js';
 import {colorCode} from './code-analyzer.js';
-import Viz from 'viz.js';
 
 $(document).ready(function () {
     $('#codeSubmissionButton').click(() => {
@@ -20,10 +18,6 @@ $(document).ready(function () {
 });
 
 function printGraph(graphDot){
-    let v = new Viz({Module,render});
-    let graphPage = document.getElementById('Graph');
-    v.renderSVGElement(graphDot)
-        .then(function(element) {
-            graphPage.appendChild(element);
-        });
+    var d3 = require('d3-graphviz');
+    d3.graphviz('#Graph').renderDot(graphDot);
 }

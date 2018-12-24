@@ -134,24 +134,34 @@ function colorCode(graph, ast, input_vector) {
 }
 
 function colorCodeCont(graph){
+    let loopAvoid = [];
     let currNode = graph[0];
-    while(currNode.type != 'exit'){
+    let beenThere = [];
+    while(currNode){
         currNode.isColor = true;
-        if(currNode.normal){
+        beenThere.push(currNode);
+        if(currNode.normal)
             currNode = currNode.normal;
+        else if(currNode.false || currNode.true){
+            currNode = handleColorCodeCond(currNode, loopAvoid);
         }
-        else{
-            let nodeLabel = currNode.label;
-            Object.keys(values).forEach(function (key) {
-                nodeLabel = nodeLabel.replace(key, values[key]);
-            });
-            if(eval(nodeLabel))
-                currNode = currNode.true;
-            else
-                currNode = currNode.false;
-        }
+        else
+            currNode = undefined;
     }
-    currNode.isColor = true;
+}
+
+function handleColorCodeCond(currNode, loopAvoid){
+    let nodeLabel = currNode.label;
+    Object.keys(values).forEach(function (key) {
+        nodeLabel = nodeLabel.replace(key, values[key]);
+    });
+    if(eval(nodeLabel) && !loopAvoid.includes(currNode.true)){
+        loopAvoid.push(currNode.true);
+        currNode = currNode.true;
+    }
+    else
+        currNode = currNode.false;
+    return currNode;
 }
 
 

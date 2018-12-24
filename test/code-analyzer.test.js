@@ -119,7 +119,7 @@ describe('The javascript parser', () => {
     it('testing code color for function with while', () => {
         let func = 'function whileFunc(a){\n' +
             'let b = a + 1;\n' +
-            'while(b > 2){\n' +
+            'while(b > 1){\n' +
             '   a = b + 1;\n' +
             '}\n' +
             'return b + a;\n' +
@@ -132,10 +132,10 @@ describe('The javascript parser', () => {
 
         assert.equal(graph[0].label, 'let b = a + 1;');
         assert.equal(graph[0].isColor, true);
-        assert.equal(graph[1].label, 'b > 2');
+        assert.equal(graph[1].label, 'b > 1');
         assert.equal(graph[1].isColor, true);
         assert.equal(graph[2].label, 'a = b + 1');
-        assert.equal(graph[2].isColor, undefined);
+        assert.equal(graph[2].isColor, true);
         assert.equal(graph[3].label, 'return b + a;');
         assert.equal(graph[3].isColor, true);
     });
