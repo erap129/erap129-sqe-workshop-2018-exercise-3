@@ -2,18 +2,22 @@ import assert from 'assert';
 import {makeGraph} from '../src/js/code-cfg';
 import {createGraphScript} from '../src/js/code-dot.js';
 import {parseCode} from '../src/js/code-analyzer';
+import {colorCode} from '../src/js/code-analyzer.js';
 
 describe('The graph string builder', () => {
-    it('is creating graph string for a simple function graph', () => {
+    it('is creating graph string for a simple function graph with color', () => {
         let func = 'function testFunc(a){\n' +
             'let b = a + 1;\n' +
             'return a;\n' +
             '}';
-        let graph = createGraphScript(makeGraph(parseCode(func)));
-        assert.equal(graph, 'digraph {node_0 [label="1' +
-            '\nlet b = a + 1;" shape=box]\n' +
-            'node_1 [label="2' +
-            '\nreturn a;" shape=box]\n' +
+        let inputVector = '{"a":1}';
+        let pregraph = makeGraph(parseCode(func));
+        colorCode(pregraph, parseCode(func), inputVector);
+        let graph = createGraphScript(pregraph);
+        assert.equal(graph, 'digraph {node_0 [label="1\n' +
+            'let b = a + 1;" style=filled fillcolor=green; shape=box]\n' +
+            'node_1 [label="2\n' +
+            'return a;" style=filled fillcolor=green; shape=box]\n' +
             'node_0->node_1\n }');
     });
 

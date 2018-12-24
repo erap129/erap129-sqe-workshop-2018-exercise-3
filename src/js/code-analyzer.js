@@ -117,8 +117,6 @@ var parseFunctions = {
 };
 
 function substitute(ast){
-    if(ast == null)
-        return;
     if(parseFunctions.hasOwnProperty(ast.type))
         parseFunctions[ast.type](ast);
     if(ast.hasOwnProperty('body')){
