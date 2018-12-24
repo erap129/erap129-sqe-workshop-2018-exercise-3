@@ -21,7 +21,8 @@ function cleanEntryExit(graph){
     realEntry.prev = [];
     graph.splice(0, 1);
     let exitNode = graph[graph.length - 1];
-    let realExit = exitNode.prev.filter(node => node.astNode.type == "ReturnStatement")[0];
+    let realExit = exitNode.prev.filter(node => node.astNode.type == 'ReturnStatement');
+    realExit = realExit[0];
     realExit.next = [];
     realExit.type = 'exit';
     delete realExit.normal;
