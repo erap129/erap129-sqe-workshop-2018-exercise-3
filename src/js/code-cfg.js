@@ -2,11 +2,12 @@ import * as escodegen from 'escodegen';
 import * as esgraph from 'esgraph';
 
 function makeGraph(code){
-    let func = code.body.filter(exp => exp.type == 'FunctionDeclaration')[0].body;
+    let funcArr = code.body.filter(exp => exp.type == 'FunctionDeclaration');
+    let func = funcArr[0].body;
     let graph = esgraph(func)[2];
     for(let n in graph)
         delete graph[n].exception;
-    graph = cleanEntryExit(graph);
+    cleanEntryExit(graph);
     for(let n in graph)
         graph[n].label = escodegen.generate(graph[n].astNode);
     fixNormal(graph);
@@ -14,25 +15,32 @@ function makeGraph(code){
 }
 
 function cleanEntryExit(graph){
-    let exit = graph[graph.length - 1];
-    let ret = exit.prev.filter(n => n.astNode.type == 'ReturnStatement')[0];
-    ret.type = 'exit';
-    ret.next = [];
-    graph[0].normal.prev = [];
-    graph[0].normal.type = 'entry';
-    delete ret.normal;
-    return graph.slice(1, graph.length-1);
+    let entryNode = graph[0];
+    let realEntry = entryNode.normal;
+    realEntry.type = 'entry';
+    realEntry.prev = [];
+    graph.splice(0, 1);
+    let exitNode = graph[graph.length - 1];
+    let realExit = exitNode.prev.filter(node => node.astNode.type == "ReturnStatement")[0];
+    realExit.next = [];
+    realExit.type = 'exit';
+    delete realExit.normal;
+    graph.splice(graph.length - 1, 1);
+    for(let n in graph)
+        if(graph[n].next.indexOf(exitNode) != -1)
+            graph[n].next.splice(graph[n].next.indexOf(exitNode), 1);
 }
 
 function fixNormal(graph){
-    for(let i = 0; i < graph.length; i++){
+    for(let i=0; i<graph.length; i++){
         if(graph[i].normal && graph[i].normal.normal){
-            let nextNorm = graph[i].normal;
-            graph[i].next = nextNorm.next;
-            graph[i].normal = nextNorm.normal;
-            graph[i].label += '\n' + nextNorm.label;
-            graph.splice(graph.indexOf(nextNorm), 1);
-            i--;
+            let norm = graph[i].normal;
+            graph[i].label += '\n' + graph[i].normal.label;
+            graph[i].normal = graph[i].normal.normal;
+            graph[i].next = norm.next;
+            let toRemove = graph.indexOf(norm);
+            i = i - 1;
+            graph.splice(toRemove, 1);
         }
     }
 }
