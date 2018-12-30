@@ -18,6 +18,7 @@ $(document).ready(function () {
 });
 
 function printGraph(graphDot){
+    document.getElementById('Graph').innerHTML = '';
     var d3 = require('d3-graphviz');
     d3.graphviz('#Graph').renderDot(graphDot);
 }

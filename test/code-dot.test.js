@@ -44,14 +44,15 @@ describe('The graph string builder', () => {
             'node_4 [label="5\n' +
             'b = b - 1" shape=box]\n' +
             'node_0 -> node_1\n' +
-            'node_1 -> node_2\n' +
-            'node_1 -> node_4\n' +
+            'node_1 -> node_2[label="T"]\n' +
+            'node_1 -> node_4[label="F"]\n' +
             'node_2 -> node_3\n' +
             'node_4 -> node_3\n }');
     });
 
     it('is creating graph string for a function with while', () => {
-        let func = 'function ifFunc(a){\n' +
+        let func = 'let global = 1;\n' +
+            'function ifFunc(a){\n' +
             'let b = a + 1;\n' +
             'while(b > 2){\n' +
             '   b = b + 1;\n' +
@@ -68,8 +69,8 @@ describe('The graph string builder', () => {
             'node_3 [label="4\n' +
             'return b + a;" shape=box]\n' +
             'node_0 -> node_1\n' +
-            'node_1 -> node_2\n' +
-            'node_1 -> node_3\n' +
+            'node_1 -> node_2[label="T"]\n' +
+            'node_1 -> node_3[label="F"]\n' +
             'node_2 -> node_1\n }');
     });
 });

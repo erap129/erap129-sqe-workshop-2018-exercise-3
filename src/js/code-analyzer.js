@@ -117,6 +117,8 @@ var parseFunctions = {
 };
 
 function substitute(ast){
+    if(ast == null)
+        return
     if(parseFunctions.hasOwnProperty(ast.type))
         parseFunctions[ast.type](ast);
     if(ast.hasOwnProperty('body')){
@@ -126,10 +128,11 @@ function substitute(ast){
 
 function colorCode(graph, ast, input_vector) {
     let global_input_vector = JSON.parse(input_vector);
+    input_vector = global_input_vector;
     Object.keys(global_input_vector).forEach(function (key) {
         values[key] = global_input_vector[key];
     });
-    substitute(ast);
+    // substitute(ast);
     colorCodeCont(graph);
 }
 
@@ -138,6 +141,7 @@ function colorCodeCont(graph){
     let currNode = graph[0];
     let beenThere = [];
     while(currNode){
+        substitute(escodegen.generate(currNode.label));
         currNode.isColor = true;
         beenThere.push(currNode);
         if(currNode.normal)
@@ -156,6 +160,7 @@ function handleColorCodeCond(currNode, loopAvoid){
         nodeLabel = nodeLabel.replace(key, values[key]);
     });
     if(eval(nodeLabel) && !loopAvoid.includes(currNode.true)){
+        console.log('nodelabel is ' + nodeLabel);
         loopAvoid.push(currNode.true);
         currNode = currNode.true;
     }

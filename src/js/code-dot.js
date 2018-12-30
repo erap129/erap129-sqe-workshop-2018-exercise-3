@@ -28,18 +28,21 @@ function addAllEdges(graphScript, graph){
         }
         if(graph[i].true){
             let node2Ind = graph.indexOf(graph[i].true);
-            graphScript = addEdge(i, node2Ind, graphScript);
+            graphScript = addEdge(i, node2Ind, graphScript, 'T');
         }
         if(graph[i].false){
             let node2Ind = graph.indexOf(graph[i].false);
-            graphScript = addEdge(i, node2Ind, graphScript);
+            graphScript = addEdge(i, node2Ind, graphScript, 'F');
         }
     }
     return graphScript;
 }
 
-function addEdge(ind_1, ind_2, graphScript){
-    graphScript += 'node_' + ind_1 + ' -> ' + 'node_' + ind_2 + '\n';
+function addEdge(ind_1, ind_2, graphScript, label=''){
+    graphScript += 'node_' + ind_1 + ' -> ' + 'node_' + ind_2;
+    if(label != '')
+        graphScript += '[label="' + label + '"]';
+    graphScript += '\n';
     return graphScript;
 }
 
