@@ -118,7 +118,7 @@ var parseFunctions = {
 
 function substitute(ast){
     if(ast == null)
-        return
+        return;
     if(parseFunctions.hasOwnProperty(ast.type))
         parseFunctions[ast.type](ast);
     if(ast.hasOwnProperty('body')){
@@ -132,7 +132,6 @@ function colorCode(graph, ast, input_vector) {
     Object.keys(global_input_vector).forEach(function (key) {
         values[key] = global_input_vector[key];
     });
-    // substitute(ast);
     colorCodeCont(graph);
 }
 
@@ -140,18 +139,18 @@ function colorCodeCont(graph){
     let loopAvoid = [];
     let currNode = graph[0];
     let beenThere = [];
-    while(currNode){
-        substitute(escodegen.generate(currNode.label));
+    while(currNode.type != 'exit'){
         currNode.isColor = true;
         beenThere.push(currNode);
-        if(currNode.normal)
+        if(currNode.normal){
+            substitute(parseCode(currNode.label));
             currNode = currNode.normal;
+        }
         else if(currNode.false || currNode.true){
             currNode = handleColorCodeCond(currNode, loopAvoid);
         }
-        else
-            currNode = undefined;
     }
+    currNode.isColor = true;
 }
 
 function handleColorCodeCond(currNode, loopAvoid){
@@ -160,7 +159,6 @@ function handleColorCodeCond(currNode, loopAvoid){
         nodeLabel = nodeLabel.replace(key, values[key]);
     });
     if(eval(nodeLabel) && !loopAvoid.includes(currNode.true)){
-        console.log('nodelabel is ' + nodeLabel);
         loopAvoid.push(currNode.true);
         currNode = currNode.true;
     }
