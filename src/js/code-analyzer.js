@@ -4,7 +4,6 @@ import * as escodegen from 'escodegen';
 var values = {};
 var input_vector = [];
 var global_i = 0;
-var inFunction = false;
 
 const parseCode = (codeToParse) => {
     return esprima.parseScript(codeToParse, {loc:true});
@@ -15,34 +14,18 @@ const parseCodeNoLoc = (codeToParse) => {
 };
 
 function parseRegularBody(ast){
-    if(ast.body.constructor === Array){
-        let prev_global_i = global_i;
-        global_i = 0;
-        for (;global_i < ast.body.length; global_i++)
-            substitute(ast.body[global_i], ast.body);
-        if(ast.type == 'Program'){
-            return ast;
-        }
-        global_i = prev_global_i;
-    }
-    else
-        substitute(ast.body, ast);
+    global_i = 0;
+    for (;global_i < ast.body.length; global_i++)
+        substitute(ast.body[global_i], ast.body);
+    return ast;
 }
 
 function parseBody(ast){
-    if(ast.type == 'FunctionDeclaration' && !inFunction)
-        return parseBodyFuncDecl(ast);
     return parseRegularBody(ast);
 }
 
-function parseBodyFuncDecl(ast){
-    inFunction = true;
-    parseRegularBody(ast);
-    inFunction = false;
-}
-
 function parseExpressionStatement(ast){
-    let replaceStr = replaceSingleExpr(ast.expression.right, true);
+    let replaceStr = replaceSingleExpr(ast.expression.right);
     values[escodegen.generate(ast.expression.left)] = '('+replaceStr+')';
 }
 
@@ -78,60 +61,36 @@ function parseFunctionDeclaration(ast){
     }
 }
 
-function parseWhileStatement(ast){
-    ast.test = replaceSingleExpr(ast.test);
-}
-
-function parseReturnStatement(ast){
-    ast.argument = replaceSingleExpr(ast.argument);
-}
-
-function parseIfStatement(ast){
-    ast.test = replaceSingleExpr(ast.test);
-    let old_values = JSON.parse(JSON.stringify(values));
-    substitute(ast.consequent);
-    values = JSON.parse(JSON.stringify(old_values));
-    substitute(ast.alternate);
-    values = JSON.parse(JSON.stringify(old_values));
-}
-
-function replaceSingleExpr(exprAst, raw=false){
+function replaceSingleExpr(exprAst){
     let replacedExpr = escodegen.generate(exprAst);
     Object.keys(values).forEach(function (key) {
         if(!input_vector.includes(key)) {
             replacedExpr = replacedExpr.replace(key, values[key]);
         }
     });
-    if(raw)
-        return replacedExpr;
-    return esprima.parseScript(replacedExpr).body[0].expression;
+    return replacedExpr;
 }
 
 var parseFunctions = {
     'ExpressionStatement': parseExpressionStatement,
     'VariableDeclaration': parseVariableDeclaration,
     'FunctionDeclaration': parseFunctionDeclaration,
-    'IfStatement': parseIfStatement,
-    'ReturnStatement': parseReturnStatement,
-    'WhileStatement': parseWhileStatement
 };
 
 function substitute(ast){
-    if(ast == null)
-        return;
     if(parseFunctions.hasOwnProperty(ast.type))
         parseFunctions[ast.type](ast);
-    if(ast.hasOwnProperty('body')){
+    if(ast.hasOwnProperty('body') && (!ast.type || ast.type != 'FunctionDeclaration')){
         parseBody(ast);
     }
 }
 
 function colorCode(graph, ast, input_vector) {
     let global_input_vector = JSON.parse(input_vector);
-    input_vector = global_input_vector;
     Object.keys(global_input_vector).forEach(function (key) {
         values[key] = global_input_vector[key];
     });
+    substitute(ast);
     colorCodeCont(graph);
 }
 
@@ -146,7 +105,7 @@ function colorCodeCont(graph){
             substitute(parseCode(currNode.label));
             currNode = currNode.normal;
         }
-        else if(currNode.false || currNode.true){
+        else if(currNode.false){
             currNode = handleColorCodeCond(currNode, loopAvoid);
         }
     }
